@@ -21,8 +21,9 @@ def tools = loadScript(new File("Tools.groovy"))
 
 // define the BPXWDYN options for allocated temporary datasets
 def tempCreateOptions = "tracks space(5,5) unit(vio) blksize(80) lrecl(80) recfm(f,b) new"
+def tempPrintCreateOptions = "cyl space(5,5) unit(vio) blksize(133) lrecl(133) recfm(f,b) new"
 
-// copy program to PDS 
+// copy program to PDS
 println("Copying ${properties.sourceDir}/$file to $bmsPDS($member)")
 new CopyToPDS().file(new File("${properties.sourceDir}/$file")).dataset(bmsPDS).member(member).execute()
 
@@ -31,11 +32,11 @@ println("Processing BMS Map $file")
 
 // define the MVSExec command for generating the BMS copybook
 def copybookGen = new MVSExec().file(file).pgm("ASMA90").parm("SYSPARM(DSECT),DECK,NOOBJECT")
-           
+
 // add DD statements to the copybookGen command
 copybookGen.dd(new DDStatement().name("SYSIN").dsn("$bmsPDS($member)").options("shr").report(true))
 copybookGen.dd(new DDStatement().name("SYSPUNCH").dsn("$copybookPDS($member)").options("shr").output(true))
-copybookGen.dd(new DDStatement().name("SYSPRINT").options(tempCreateOptions))
+copybookGen.dd(new DDStatement().name("SYSPRINT").options(tempPrintCreateOptions))
 copybookGen.dd(new DDStatement().name("SYSUT1").options(tempCreateOptions))
 copybookGen.dd(new DDStatement().name("SYSUT2").options(tempCreateOptions))
 copybookGen.dd(new DDStatement().name("SYSUT3").options(tempCreateOptions))
@@ -52,7 +53,7 @@ def compile = new MVSExec().file(file).pgm("ASMA90").parm("SYSPARM(MAP),DECK,NOO
 // add DD statements to the compile command
 compile.dd(new DDStatement().name("SYSIN").dsn("$bmsPDS($member)").options("shr"))
 compile.dd(new DDStatement().name("SYSPUNCH").dsn("&&TEMPOBJ").options(tempCreateOptions).pass(true))
-compile.dd(new DDStatement().name("SYSPRINT").options(tempCreateOptions))
+compile.dd(new DDStatement().name("SYSPRINT").options(tempPrintCreateOptions))
 compile.dd(new DDStatement().name("SYSUT1").options(tempCreateOptions))
 compile.dd(new DDStatement().name("SYSUT2").options(tempCreateOptions))
 compile.dd(new DDStatement().name("SYSUT3").options(tempCreateOptions))
@@ -66,11 +67,11 @@ compile.copy(new CopyToHFS().ddName("SYSPRINT").file(logFile).hfsEncoding(proper
 
 // define the MVSExec command to link edit the program
 def linkedit = new MVSExec().file(file).pgm("IEWBLINK").parm("MAP,RENT,COMPAT(PM5)")
-	                    
+	
 // add DD statements to the linkedit command
 linkedit.dd(new DDStatement().name("SYSLIN").dsn("&&TEMPOBJ").options("shr"))
 linkedit.dd(new DDStatement().name("SYSLMOD").dsn("$loadPDS($member)").options("shr").output(true).deployType("MAPLOAD"))
-linkedit.dd(new DDStatement().name("SYSPRINT").options(tempCreateOptions))
+linkedit.dd(new DDStatement().name("SYSPRINT").options(tempPrintCreateOptions))
 linkedit.dd(new DDStatement().name("SYSUT1").options(tempCreateOptions))
 linkedit.dd(new DDStatement().name("SYSLIB").dsn(objectPDS).options("shr"))
 linkedit.dd(new DDStatement().dsn(properties.SCEELKED).options("shr"))
